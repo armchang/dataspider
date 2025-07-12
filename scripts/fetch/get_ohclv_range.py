@@ -29,14 +29,19 @@ def get_ohlcv_for_day(symbol, date):
             break
 
         for ohlcv in data:
+            open_time = datetime.datetime.fromtimestamp(ohlcv[0] / 1000)
+            if open_time >= end_dt:
+                break  # Don't include next day's candle
             all_data.append({
                 "open_time": datetime.datetime.fromtimestamp(ohlcv[0] / 1000),
+                "close_time": datetime.datetime.fromtimestamp(ohlcv[6] / 1000),
+                "pair": symbol,
                 "open": float(ohlcv[1]),
                 "high": float(ohlcv[2]),
                 "low": float(ohlcv[3]),
                 "close": float(ohlcv[4]),
-                "volume": float(ohlcv[5]),
-                "close_time": datetime.datetime.fromtimestamp(ohlcv[6] / 1000)
+                "volume": float(ohlcv[5])
+                
             })
 
         start_ts = data[-1][0] + 1  # Move to next candle
@@ -46,18 +51,14 @@ def get_ohlcv_for_day(symbol, date):
     return all_data
 
 def get_ohlcv_range(symbol, start_date, end_date):
-    current = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-    end = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+    current = start_date
 
-    while current < end:
+    while current < end_date + datetime.timedelta(days=1):
         date_str = current.strftime("%Y-%m-%d")
-        print(f"Fetching data for {date_str}...")
         daily_data = get_ohlcv_for_day(symbol, date_str)
 
-        # You can save to file/db here instead
-        for item in daily_data:
-            print(item)
-
         current += datetime.timedelta(days=1)
-        time.sleep(1)  # Avoid rate limits
+        time.sleep(1)  # Avoid rate limits   
+
+    return daily_data
 
