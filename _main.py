@@ -1,6 +1,7 @@
 import requests
 import time
 from datetime import datetime
+from tqdm import tqdm       
 import scripts.fetch.get_price as get_price  # Assuming get_price.py is in the same directory
 import scripts.fetch.get_ohclv as get_ohclv  # Assuming ohclv.py is in the same directory
 import scripts.fetch.get_ohclv_range as get_ohlcv_range  # Assuming get_ohclv_range.py is in the same directory
@@ -14,9 +15,9 @@ from scripts.util import date_util  # Assuming insert_price_batch.py is in the s
 
 # Global variables
 BASE_URL = "https://api.binance.com/api/v3/ticker/price"
-SYMBOL = "ETHUSDT"
-START_DATE = datetime.strptime("2024-07-01", "%Y-%m-%d")
-END_DATE = datetime.strptime("2024-07-02", "%Y-%m-%d")
+SYMBOL = "PAXGUSDT"
+START_DATE = datetime.strptime("2024-03-01", "%Y-%m-%d")
+END_DATE = datetime.strptime("2024-06-30", "%Y-%m-%d")
 
 if __name__ == "__main__":
     #data = get_ohlcv_range.get_ohlcv_range(SYMBOL, START_DATE, END_DATE)
@@ -24,8 +25,11 @@ if __name__ == "__main__":
     # Create the database if it doesn't exist
     create_db.run()
 
-    for day in date_util.date_range(START_DATE, END_DATE):
-        print(f"📅 Fetching from {day}...")
+    # Date list used for progress bar
+    date_list = list(date_util.date_range(START_DATE, END_DATE))
+
+    for day in tqdm(date_list, desc=f"📅 💾 Saving {SYMBOL} data progress: "):
+        #tqdm.write(f"📅 Fetching from {day.strftime('%Y-%m-%d')}...")
         # Make sure your get_ohlcv_range can handle datetime input or convert to string
         data = get_ohlcv_range.get_ohlcv_range(
             symbol=SYMBOL,
@@ -33,6 +37,6 @@ if __name__ == "__main__":
             end_date=day
         )
         # Save data to the database
-        print(f"💾 Saving {len(data)} OHLCV records for {SYMBOL} to database...")
+        #tqdm.write(f"💾 Saving {len(data)} OHLCV records for {SYMBOL} to database...")
         insert_price_batch.run(data)
-        print(f"✅ Done saving {SYMBOL} data to DB.\n")
+        #tqdm.write(f"✅ Done saving {SYMBOL} data to DB.\n")
