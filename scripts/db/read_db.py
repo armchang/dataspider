@@ -1,9 +1,8 @@
 import pandas as pd
-from scripts.db.connection import get_connection
+from scripts.db.connection import database
 
 def run():
-    with get_connection() as conn:
-        df = pd.read_sql_query("SELECT * FROM ohclv ORDER BY open_time DESC", conn)
-
+    columns, rows = database.fetch_recent_ohlcv(limit=5)
+    df = pd.DataFrame(rows, columns=columns)
     print(df.head())
 

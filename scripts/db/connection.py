@@ -1,27 +1,11 @@
-import psycopg
-from psycopg.conninfo import make_conninfo
-
-from config.config import (
-    DATABASE_URL,
-    POSTGRES_DB,
-    POSTGRES_HOST,
-    POSTGRES_PASSWORD,
-    POSTGRES_PORT,
-    POSTGRES_USER,
-)
+from config.config import DATABASE_TYPE, DATABASE_URL
+from scripts.db.database import load_database
 
 
-def get_connection(database=None, *, autocommit=False):
-    """Return a PostgreSQL connection using environment-backed settings."""
-    if DATABASE_URL:
-        conninfo = make_conninfo(DATABASE_URL, dbname=database) if database else DATABASE_URL
-        return psycopg.connect(conninfo, autocommit=autocommit)
+# connection.py chooses the backend; database.py loads its adapter dynamically.
+database = load_database(DATABASE_TYPE, {"url": DATABASE_URL})
 
-    return psycopg.connect(
-        host=POSTGRES_HOST,
-        port=POSTGRES_PORT,
-        dbname=database or POSTGRES_DB,
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD,
-        autocommit=autocommit,
-    )
+
+def get_connection():
+    """Compatibility helper for code that needs a raw backend connection."""
+    return database.connect()
