@@ -2,3 +2,4 @@ datas/dataspider.db
 *.db
 .DS_Store
 **/.DS_Store
+venv/
