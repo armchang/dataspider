@@ -15,9 +15,9 @@ from scripts.util import date_util  # Assuming insert_price_batch.py is in the s
 
 # Global variables
 BASE_URL = "https://api.binance.com/api/v3/ticker/price"
-SYMBOL = "PAXGUSDT"
-START_DATE = datetime.strptime("2024-03-01", "%Y-%m-%d")
-END_DATE = datetime.strptime("2024-06-30", "%Y-%m-%d")
+SYMBOL = "BTCUSDT"
+START_DATE = datetime.strptime("2025-01-01", "%Y-%m-%d")
+END_DATE = datetime.strptime("2025-12-31", "%Y-%m-%d")
 
 if __name__ == "__main__":
     #data = get_ohlcv_range.get_ohlcv_range(SYMBOL, START_DATE, END_DATE)
