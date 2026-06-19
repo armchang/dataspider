@@ -1,31 +1,27 @@
-import datetime
-import sqlite3
-from config.config import DATABASE_PATH
+from psycopg import sql
+
+from config.config import POSTGRES_DB, POSTGRES_MAINTENANCE_DB
+from scripts.db.connection import get_connection
 
 def run():
-    # Connect to or create the database
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
+    # CREATE DATABASE cannot run inside a transaction.
+    with get_connection(POSTGRES_MAINTENANCE_DB, autocommit=True) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (POSTGRES_DB,))
+            if cursor.fetchone() is None:
+                cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(POSTGRES_DB)))
 
-    # Create table if it doesn't exist
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS ohclv (
-        open_time TEXT PRIMARY KEY,
-        close_time TEXT,
-        pair TEXT,
-        open REAL,
-        high REAL,
-        low REAL,
-        close REAL,
-        volume REAL        
-    )
-    ''')
-
-    # Example data to insert
-    # cursor.execute("""
-    # INSERT OR IGNORE INTO ohclv (open_time, close_time, pair, open, high, low, close, volume)
-    # VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    # """, ("2024-06-22 12:00:00", "2024-06-22 12:01:00", "BTCUSDT", 35000, 35500, 34800, 35300, 23.5))
-
-    conn.commit()
-    conn.close()
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS ohclv (
+                    open_time TIMESTAMP PRIMARY KEY,
+                    close_time TIMESTAMP,
+                    pair TEXT,
+                    open DOUBLE PRECISION,
+                    high DOUBLE PRECISION,
+                    low DOUBLE PRECISION,
+                    close DOUBLE PRECISION,
+                    volume DOUBLE PRECISION
+                )
+            """)

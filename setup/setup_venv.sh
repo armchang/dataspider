@@ -41,6 +41,6 @@ python -m venv $VENV_NAME
 source $VENV_NAME/bin/activate
 echo "🚀 Virtual environment activated."
 pip install --upgrade pip
-pip install pandas requests
+pip install pandas requests "psycopg[binary]"
 
 echo "✅ Setup complete. Python version in venv: $(python --version)"

@@ -1,4 +1,7 @@
 datas/dataspider.db
 *.db
+*.sqbpro
+.env
 .DS_Store
 **/.DS_Store
+venv/
