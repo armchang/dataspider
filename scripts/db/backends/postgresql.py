@@ -32,12 +32,40 @@ class Database(DatabaseAdapter):
                         open_time TIMESTAMP PRIMARY KEY,
                         close_time TIMESTAMP,
                         pair TEXT,
-                        open DOUBLE PRECISION,
-                        high DOUBLE PRECISION,
-                        low DOUBLE PRECISION,
-                        close DOUBLE PRECISION,
+                        open NUMERIC(20, 2),
+                        high NUMERIC(20, 2),
+                        low NUMERIC(20, 2),
+                        close NUMERIC(20, 2),
                         volume DOUBLE PRECISION
                     )
+                """)
+                cursor.execute("""
+                    DO $$
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1
+                            FROM information_schema.columns
+                            WHERE table_schema = current_schema()
+                              AND table_name = 'ohclv'
+                              AND column_name IN ('open', 'high', 'low', 'close')
+                              AND (
+                                  data_type <> 'numeric'
+                                  OR numeric_precision <> 20
+                                  OR numeric_scale <> 2
+                              )
+                        ) THEN
+                            ALTER TABLE ohclv
+                                ALTER COLUMN open TYPE NUMERIC(20, 2)
+                                    USING ROUND(open::numeric, 2),
+                                ALTER COLUMN high TYPE NUMERIC(20, 2)
+                                    USING ROUND(high::numeric, 2),
+                                ALTER COLUMN low TYPE NUMERIC(20, 2)
+                                    USING ROUND(low::numeric, 2),
+                                ALTER COLUMN close TYPE NUMERIC(20, 2)
+                                    USING ROUND(close::numeric, 2);
+                        END IF;
+                    END
+                    $$;
                 """)
 
     def insert_ohlcv(self, item):

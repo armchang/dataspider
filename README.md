@@ -30,13 +30,39 @@ The current entry point collects `PAXGUSDT` candles from 1 March 2024 through 30
 
 ## Installation
 
+### One-command Windows setup
+
+Run the included PowerShell launcher from the project root:
+
+```powershell
+.\start_venv.ps1
+```
+
+On its first run, the script creates `.venv`, installs `requirements.txt`, and opens a new PowerShell window with the environment activated. Later runs reuse the existing environment.
+
+To reinstall or refresh dependencies:
+
+```powershell
+.\start_venv.ps1 -Install
+```
+
+If PowerShell blocks local scripts, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start_venv.ps1
+```
+
+For setup without opening a new interactive shell, pass `-NoShell`.
+
+### Manual setup
+
 Create and activate a virtual environment:
 
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
-pip install pandas requests tqdm "psycopg[binary]"
+pip install -r requirements.txt
 ```
 
 Windows PowerShell:
@@ -45,7 +71,7 @@ Windows PowerShell:
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install --upgrade pip
-pip install pandas requests tqdm "psycopg[binary]"
+pip install -r requirements.txt
 ```
 
 The `psycopg` package may be omitted when the project will only use SQLite. macOS/Linux users with `pyenv` can alternatively run `setup/setup_venv.sh`.
@@ -170,15 +196,17 @@ CREATE TABLE IF NOT EXISTS ohclv (
     open_time TIMESTAMP PRIMARY KEY,
     close_time TIMESTAMP,
     pair TEXT,
-    open DOUBLE PRECISION,
-    high DOUBLE PRECISION,
-    low DOUBLE PRECISION,
-    close DOUBLE PRECISION,
+    open NUMERIC(20, 2),
+    high NUMERIC(20, 2),
+    low NUMERIC(20, 2),
+    close NUMERIC(20, 2),
     volume DOUBLE PRECISION
 );
 ```
 
 The table is named `ohclv` in the current codebase rather than the more common spelling `ohlcv`.
+
+The PostgreSQL adapter stores `open`, `high`, `low`, and `close` as fixed-scale `NUMERIC(20,2)` values. During initialization it automatically migrates older `double precision` price columns and rounds existing values to two decimal places. `volume` remains `DOUBLE PRECISION` so small fractional quantities are preserved.
 
 ## Project structure
 
@@ -188,6 +216,8 @@ dataspider/
 |-- .env.example                          # PostgreSQL and SQLite examples
 |-- .gitignore
 |-- README.md
+|-- requirements.txt                      # Reproducible Python dependencies
+|-- start_venv.ps1                        # One-command Windows environment launcher
 |-- config/
 |   `-- config.py                         # Backend-neutral type and URL settings
 |-- datas/                                # Local data files, including SQLite databases
@@ -231,3 +261,21 @@ Historical downloads use Binance's `1m` interval. The fetcher pauses between req
 - `open_time` is the sole primary key. A candle for another trading pair with the same opening time is treated as a duplicate.
 - Network errors from the historical range fetcher are not retried automatically.
 - SQLite and PostgreSQL use different physical column types and SQL syntax, which remain isolated inside their respective adapters.
+
+## Troubleshooting
+
+### `ModuleNotFoundError: No module named 'psycopg'`
+
+Install the PostgreSQL driver with the same Python interpreter used to start the application:
+
+```powershell
+python -m pip install "psycopg[binary]"
+```
+
+For Anaconda specifically:
+
+```powershell
+C:\Users\armch\anaconda3\python.exe -m pip install "psycopg[binary]"
+```
+
+Using `python -m pip` avoids installing the package into a different Python environment by accident. SQLite does not require `psycopg`.

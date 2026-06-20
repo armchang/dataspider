@@ -4,6 +4,6 @@ import os
 DATABASE_TYPE = os.getenv("DATABASE_TYPE", "postgresql").lower()
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/dataspider",
+    "postgresql://postgres:PASSWORD@localhost:5433/dataspider",
 )
 
