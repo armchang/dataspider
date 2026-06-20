@@ -7,7 +7,7 @@ SYMBOL = "BTCUSDT"
 INTERVAL = "1m"
 LIMIT = 1000  # Binance max per request
 
-def get_ohlcv_for_day(symbol, date):
+def get_ohlcv_for_day(symbol, date, base_url=BASE_URL):
     start_dt = datetime.datetime.strptime(date, "%Y-%m-%d")
     end_dt = start_dt + datetime.timedelta(days=1)
     
@@ -18,7 +18,7 @@ def get_ohlcv_for_day(symbol, date):
 
     while start_ts < end_ts:
         url = (
-            f"{BASE_URL}?symbol={symbol}&interval={INTERVAL}"
+            f"{base_url}?symbol={symbol}&interval={INTERVAL}"
             f"&startTime={start_ts}&endTime={end_ts}&limit={LIMIT}"
         )
         response = requests.get(url)
@@ -50,12 +50,12 @@ def get_ohlcv_for_day(symbol, date):
 
     return all_data
 
-def get_ohlcv_range(symbol, start_date, end_date):
+def get_ohlcv_range(symbol, start_date, end_date, base_url=BASE_URL):
     current = start_date
 
     while current < end_date + datetime.timedelta(days=1):
         date_str = current.strftime("%Y-%m-%d")
-        daily_data = get_ohlcv_for_day(symbol, date_str)
+        daily_data = get_ohlcv_for_day(symbol, date_str, base_url=base_url)
 
         current += datetime.timedelta(days=1)
         time.sleep(1)  # Avoid rate limits   

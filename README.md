@@ -143,10 +143,24 @@ Do not combine a PostgreSQL type with a SQLite URL, or vice versa.
 
 ## Running the project
 
-Run the historical collector:
+Run the historical collector using the defaults from `config/config.py`:
 
 ```bash
 python _main.py
+```
+
+Override the defaults with command-line parameters:
+
+```bash
+python _main.py --symbol BTCUSDT --start-date 2024-01-01 --end-date 2024-01-31
+```
+
+This is the recommended integration point for another project such as `tradrpro.ai`: start Dataspider as a process and pass `--symbol`, `--start-date`, and `--end-date`. The command exits with a non-zero status when validation, downloading, or persistence fails.
+
+All supported arguments can be viewed with:
+
+```bash
+python _main.py --help
 ```
 
 Create only the configured database/table:
@@ -245,12 +259,26 @@ dataspider/
 
 ## Adjusting the collection
 
-Edit these constants in `_main.py`:
+Edit the collection settings in `config/config.py`:
 
 ```python
-SYMBOL = "PAXGUSDT"
-START_DATE = datetime.strptime("2024-03-01", "%Y-%m-%d")
-END_DATE = datetime.strptime("2024-06-30", "%Y-%m-%d")
+BASE_URL = "https://api.binance.com/api/v3/klines"
+SYMBOL = "BTCUSDT"
+START_DATE = datetime.strptime("2020-01-01", "%Y-%m-%d")
+END_DATE = datetime.strptime("2026-06-15", "%Y-%m-%d")
+```
+
+These values are defaults. `_main.py` imports them from the configuration module, but command-line parameters take precedence. Python callers can alternatively use:
+
+```python
+from datetime import datetime
+from _main import run
+
+rows = run(
+    symbol="BTCUSDT",
+    start_date=datetime.strptime("2024-01-01", "%Y-%m-%d"),
+    end_date=datetime.strptime("2024-01-31", "%Y-%m-%d"),
+)
 ```
 
 Historical downloads use Binance's `1m` interval. The fetcher pauses between requests to reduce the likelihood of hitting API rate limits.
