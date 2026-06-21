@@ -1,4 +1,5 @@
 pandas
 psycopg[binary]
+psycopg-binary
 requests
 tqdm
