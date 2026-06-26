@@ -20,16 +20,18 @@ class Database(DatabaseAdapter):
         with self.connect() as connection:
             connection.execute("""
                 CREATE TABLE IF NOT EXISTS ohclv (
-                    open_time TIMESTAMP PRIMARY KEY,
+                    open_time TIMESTAMP,
                     close_time TIMESTAMP,
                     pair TEXT,
                     open REAL,
                     high REAL,
                     low REAL,
                     close REAL,
-                    volume REAL
+                    volume REAL,
+                    PRIMARY KEY (pair, open_time)
                 )
             """)
+            self._ensure_composite_primary_key(connection)
 
     def insert_ohlcv(self, item):
         with self.connect() as connection:
@@ -57,8 +59,37 @@ class Database(DatabaseAdapter):
         return """
             INSERT INTO ohclv (open_time, close_time, pair, open, high, low, close, volume)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (open_time) DO NOTHING
+            ON CONFLICT (pair, open_time) DO NOTHING
         """
+
+    @staticmethod
+    def _ensure_composite_primary_key(connection):
+        columns = connection.execute("PRAGMA table_info(ohclv)").fetchall()
+        primary_key_columns = [column[1] for column in sorted(columns, key=lambda column: column[5]) if column[5]]
+        if primary_key_columns in ([], ["pair", "open_time"]):
+            return
+
+        connection.execute("ALTER TABLE ohclv RENAME TO ohclv_old")
+        connection.execute("""
+            CREATE TABLE ohclv (
+                open_time TIMESTAMP,
+                close_time TIMESTAMP,
+                pair TEXT,
+                open REAL,
+                high REAL,
+                low REAL,
+                close REAL,
+                volume REAL,
+                PRIMARY KEY (pair, open_time)
+            )
+        """)
+        connection.execute("""
+            INSERT OR IGNORE INTO ohclv
+                (open_time, close_time, pair, open, high, low, close, volume)
+            SELECT open_time, close_time, pair, open, high, low, close, volume
+            FROM ohclv_old
+        """)
+        connection.execute("DROP TABLE ohclv_old")
 
     @staticmethod
     def _to_row(item):

@@ -29,15 +29,42 @@ class Database(DatabaseAdapter):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS ohclv (
-                        open_time TIMESTAMP PRIMARY KEY,
+                        open_time TIMESTAMP,
                         close_time TIMESTAMP,
                         pair TEXT,
                         open NUMERIC(20, 2),
                         high NUMERIC(20, 2),
                         low NUMERIC(20, 2),
                         close NUMERIC(20, 2),
-                        volume DOUBLE PRECISION
+                        volume DOUBLE PRECISION,
+                        PRIMARY KEY (pair, open_time)
                     )
+                """)
+                cursor.execute("""
+                    DO $$
+                    DECLARE
+                        primary_key_name TEXT;
+                        primary_key_columns TEXT[];
+                    BEGIN
+                        SELECT con.conname, array_agg(att.attname ORDER BY key_position.ordinality)
+                        INTO primary_key_name, primary_key_columns
+                        FROM pg_constraint con
+                        JOIN unnest(con.conkey) WITH ORDINALITY AS key_position(attnum, ordinality)
+                            ON TRUE
+                        JOIN pg_attribute att
+                            ON att.attrelid = con.conrelid
+                           AND att.attnum = key_position.attnum
+                        WHERE con.conrelid = 'ohclv'::regclass
+                          AND con.contype = 'p'
+                        GROUP BY con.conname;
+
+                        IF primary_key_name IS NOT NULL
+                           AND primary_key_columns <> ARRAY['pair', 'open_time'] THEN
+                            EXECUTE format('ALTER TABLE ohclv DROP CONSTRAINT %I', primary_key_name);
+                            ALTER TABLE ohclv ADD PRIMARY KEY (pair, open_time);
+                        END IF;
+                    END
+                    $$;
                 """)
                 cursor.execute("""
                     DO $$
@@ -97,7 +124,7 @@ class Database(DatabaseAdapter):
         return """
             INSERT INTO ohclv (open_time, close_time, pair, open, high, low, close, volume)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (open_time) DO NOTHING
+            ON CONFLICT (pair, open_time) DO NOTHING
         """
 
     @staticmethod
